@@ -9,6 +9,7 @@
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QVariant>
+#include <QMap>
 
 namespace lliurex
 {
@@ -22,10 +23,12 @@ namespace lliurex
         private:
 
         void loadConfig();
+        void exportConfig();
 
         QVariant m_data;
         QVBoxLayout* m_layout;
         QVBoxLayout* m_screenList;
+        QMap<int,bool> m_enable;
 
     };
 }

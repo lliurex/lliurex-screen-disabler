@@ -70,7 +70,15 @@ MainWindow::MainWindow(QWidget* parent): QMainWindow(parent)
     {
         qDebug()<<"loading config...";
         loadConfig();
-        //foo();
+    });
+    toolbar->addWidget(btn);
+
+    btn = new QPushButton(this);
+    btn->setIcon(QIcon::fromTheme("document-save"));
+    connect(btn, &QPushButton::clicked, [this]()
+    {
+        qDebug()<<"saving config...";
+        exportConfig();
     });
     toolbar->addWidget(btn);
 
@@ -86,6 +94,7 @@ MainWindow::MainWindow(QWidget* parent): QMainWindow(parent)
 
     setCentralWidget(centralWidget);
 
+    loadConfig();
 
 }
 
@@ -113,7 +122,6 @@ void MainWindow::loadConfig()
     m_data = config.toVariant();
 
     QList<QVariant> items = m_data.toList();
-    QList<int> disable;
 
     for (QVariant & item : items) {
         QHash<QString,QVariant> section = item.toHash();
@@ -130,19 +138,40 @@ void MainWindow::loadConfig()
                 qDebug()<<n;
 
                 QCheckBox* checkBox = new QCheckBox(edid);
+                checkBox->setProperty("screenIndex",n);
+
+                connect(checkBox, &QCheckBox::checkStateChanged, [this,checkBox]()
+                {
+                    qDebug()<<"click";
+
+                    int index = checkBox->property("screenIndex").toInt();
+                    m_enable[index] = (checkBox->checkState() == Qt::Checked);
+
+                });
+
                 m_screenList->addWidget(checkBox);
 
                 if (edid == "L01N8A") {
                     checkBox->setCheckState(Qt::Unchecked);
-                    disable<<n;
+                    m_enable[n] = false;
                 }
                 else {
                     checkBox->setCheckState(Qt::Checked);
+                    m_enable[n] = true;
                 }
                 n++;
             }
         }
     }
+
+
+
+}
+
+void MainWindow::exportConfig()
+{
+
+    QList<QVariant> items = m_data.toList();
 
     QList<QVariant> nitems;
 
@@ -170,12 +199,7 @@ void MainWindow::loadConfig()
                     //outputData["enabled"] = true;
                     qDebug()<<"index:"<<index;
 
-                    for (int & d : disable) {
-                        if (d == index) {
-                            qDebug()<<"disable!";
-                            outputData["enabled"] = false;
-                        }
-                    }
+                    outputData["enabled"] = m_enable[index];
 
                     noutputs<<outputData;
                 }
@@ -190,9 +214,8 @@ void MainWindow::loadConfig()
         nitems<<section;
     }
 
-
+    QFile configFile;
     configFile.setFileName("kwinoutputconfig.json");
-
 
     configFile.open(QIODevice::ReadWrite);
     QJsonDocument out = QJsonDocument::fromVariant(nitems);
@@ -200,6 +223,4 @@ void MainWindow::loadConfig()
     configFile.write(out.toJson());
 
     configFile.close();
-
 }
-

@@ -17,11 +17,45 @@ extern "C" {
 #include <QFile>
 #include <QVariant>
 #include <QDir>
+#include <QRegularExpression>
 
 #include <fstream>
 
 using namespace lliurex;
 using namespace std;
+
+QString getVendorName(QString code)
+{
+    QString value = "Unknown";
+
+    QFile file("/usr/share/hwdata/pnp.ids");
+
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return value;
+    }
+
+    QTextStream in(&file);
+    QString line;
+
+    while (in.readLineInto(&line)) {
+        if (line.trimmed().isEmpty()) {
+            continue;
+        }
+
+        QStringList columns = line.split(QRegularExpression("\\t"),
+                                         Qt::SkipEmptyParts);
+
+        if (columns.size() >= 2) {
+            if (code == columns[0]) {
+                value = columns[1];
+            }
+        }
+    }
+
+    file.close();
+
+    return value;
+}
 
 QString readEdid(QString path)
 {
@@ -50,6 +84,17 @@ QString readEdid(QString path)
     info = di_info_parse_edid((void *)buffer.data(),buffer.size());
     value = di_info_get_model(info);
     qDebug()<<"model:"<<value;
+
+    const struct di_edid* edid = di_info_get_edid(info);
+
+    const struct di_edid_vendor_product* product = di_edid_get_vendor_product(edid);
+
+    QString manufacturer = getVendorName(product->manufacturer);
+
+    qDebug()<<Qt::hex<<"vendor:"<<product->product;
+    qDebug()<<"["<<product->manufacturer<<"]";
+    qDebug()<<"["<<manufacturer<<"]";
+    value = manufacturer + " " + value;
     di_info_destroy(info);
 
     return value;

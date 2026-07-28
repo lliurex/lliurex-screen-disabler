@@ -34,7 +34,6 @@ QString getVendorName(QString code)
 {
     QString value = "Unknown";
 
-
     fstream f;
     f.open("/usr/share/hwdata/pnp.ids", std::ios::in);
 
@@ -57,7 +56,6 @@ QString getVendorName(QString code)
     }
 
     f.close();
-
 
     return value;
 }
@@ -254,7 +252,7 @@ void MainWindow::exportConfig()
     }
 
     QFile configFile;
-    configFile.setFileName("kwinoutputconfig.json");
+    configFile.setFileName("/tmp/kwinoutputconfig.json");
 
     configFile.open(QIODevice::ReadWrite);
     QJsonDocument out = QJsonDocument::fromVariant(nitems);

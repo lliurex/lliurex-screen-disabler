@@ -2,6 +2,11 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <sys/stat.h>
+#include <unistd.h>
+#include <pwd.h>
+#include <grp.h>
+
 #include <string>
 #include <iostream>
 #include <filesystem>
@@ -18,6 +23,14 @@ int main(int argc,char* argv[])
         return 0;
     }
 
+    struct passwd* pwd = getpwnam("sddm");
+
+    if (!pwd) {
+        cerr<<"Failed to retrieve sddm user"<<endl;
+
+        return 1;
+    }
+
     try {
 
         std::filesystem::path source = argv[1];
@@ -29,10 +42,13 @@ int main(int argc,char* argv[])
 
         if (!std::filesystem::exists(destination)) {
             std::filesystem::create_directory(destination);
-            //TODO: fix ownership
+            chown(destination.c_str(), pwd->uid, pwd->gid);
         }
 
         std::filesystem::copy(source,destination);
+
+        std::filesystem::path filepath = destination / source.filename();
+        chown(filepath.c_str(), pwd->uid, pwd->gid);
 
     }
     catch(std::exception& e) {

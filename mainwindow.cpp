@@ -11,6 +11,7 @@ extern "C" {
 
 #include <QHBoxLayout>
 #include <QPushButton>
+#include <QLabel>
 #include <QCheckBox>
 #include <QIcon>
 #include <QJsonDocument>
@@ -18,11 +19,16 @@ extern "C" {
 #include <QVariant>
 #include <QDir>
 #include <QRegularExpression>
+#include <QStringList>
 
 #include <fstream>
 
 using namespace lliurex;
 using namespace std;
+
+const QStringList screenDB = {
+    ".*L01N8A.*"
+};
 
 QString getVendorName(QString code)
 {
@@ -61,7 +67,6 @@ QString readEdid(QString path)
 {
     QString value;
 
-    qDebug()<<"reading edid "<<path;
     vector<uint8_t> buffer;
 
     fstream f;
@@ -76,8 +81,6 @@ QString readEdid(QString path)
     }
 
     f.close();
-
-    qDebug()<<"Edid size "<<buffer.size();
 
     struct di_info* info;
 
@@ -105,42 +108,36 @@ MainWindow::MainWindow(QWidget* parent): QMainWindow(parent)
     QWidget* centralWidget = new QWidget(this);
     m_layout = new QVBoxLayout(centralWidget);
     m_screenList = new QVBoxLayout();
-    QHBoxLayout* toolbar = new QHBoxLayout();
 
+
+    QHBoxLayout* toolbar = new QHBoxLayout();
     QPushButton* btn;
 
-    btn = new QPushButton(this);
-    btn->setIcon(QIcon::fromTheme("document-new"));
+    toolbar->addStretch();
+    btn = new QPushButton("Apply");
     connect(btn, &QPushButton::clicked, [this]()
     {
-        qDebug()<<"loading config...";
-        loadConfig();
-    });
-    toolbar->addWidget(btn);
-
-    btn = new QPushButton(this);
-    btn->setIcon(QIcon::fromTheme("document-save"));
-    connect(btn, &QPushButton::clicked, [this]()
-    {
-        qDebug()<<"saving config...";
         exportConfig();
     });
     toolbar->addWidget(btn);
 
-
-    toolbar->addStretch();
+    btn = new QPushButton("Cancel");
+    connect(btn, &QPushButton::clicked, [this]()
+    {
+        close();
+    });
+    toolbar->addWidget(btn);
 
     setWindowTitle("Lliurex Screen Disabler");
     resize(800, 600);
 
-    m_layout->addLayout(toolbar);
+    m_layout->addWidget(new QLabel("Available monitors"));
     m_layout->addLayout(m_screenList);
     m_layout->addStretch();
-
+    m_layout->addLayout(toolbar);
     setCentralWidget(centralWidget);
 
     loadConfig();
-
 }
 
 MainWindow::~MainWindow()
@@ -153,7 +150,6 @@ void MainWindow::loadConfig()
     QFile configFile;
 
     configFile.setFileName(QDir::home().path()+"/.config/kwinoutputconfig.json");
-
 
     if (!configFile.exists()) {
         return;
@@ -179,37 +175,36 @@ void MainWindow::loadConfig()
                 QHash<QString,QVariant> outputData = output.toHash();
                 QString connector = outputData["connectorName"].toString();
                 QString edid = readEdid("/sys/class/drm/card1-" + connector + "/edid");
-                qDebug()<<edid;
-                qDebug()<<n;
 
                 QCheckBox* checkBox = new QCheckBox(edid);
                 checkBox->setProperty("screenIndex",n);
 
                 connect(checkBox, &QCheckBox::checkStateChanged, [this,checkBox]()
                 {
-                    qDebug()<<"click";
-
                     int index = checkBox->property("screenIndex").toInt();
                     m_enable[index] = (checkBox->checkState() == Qt::Checked);
-
                 });
 
                 m_screenList->addWidget(checkBox);
 
-                if (edid == "L01N8A") {
-                    checkBox->setCheckState(Qt::Unchecked);
-                    m_enable[n] = false;
+                checkBox->setCheckState(Qt::Checked);
+                m_enable[n] = true;
+
+                for (QString screenRule : screenDB) {
+                    QRegularExpression rule(screenRule);
+
+                    if (rule.match(edid).hasMatch()) {
+                        qDebug()<<"Match "<<edid<<" with "<<screenRule;
+
+                        checkBox->setCheckState(Qt::Unchecked);
+                        m_enable[n] = false;
+                    }
                 }
-                else {
-                    checkBox->setCheckState(Qt::Checked);
-                    m_enable[n] = true;
-                }
+
                 n++;
             }
         }
     }
-
-
 
 }
 

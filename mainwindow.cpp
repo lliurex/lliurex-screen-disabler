@@ -27,38 +27,37 @@ using namespace lliurex;
 using namespace std;
 
 const QStringList screenDB = {
-    ".*L01N8A.*"
+    ".*L01N8A.*" /* small integrated on tower screen */
 };
 
 QString getVendorName(QString code)
 {
     QString value = "Unknown";
 
-    QFile file("/usr/share/hwdata/pnp.ids");
 
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        return value;
-    }
+    fstream f;
+    f.open("/usr/share/hwdata/pnp.ids", std::ios::in);
 
-    QTextStream in(&file);
-    QString line;
+    string line;
 
-    while (in.readLineInto(&line)) {
-        if (line.trimmed().isEmpty()) {
+    while (f.good()) {
+        std::getline(f,line);
+
+        std::size_t tab = line.find('\t');
+        if (tab == std::string::npos) {
             continue;
         }
 
-        QStringList columns = line.split(QRegularExpression("\\t"),
-                                         Qt::SkipEmptyParts);
+        string c1 = line.substr(0,tab);
+        string c2 = line.substr(tab);
 
-        if (columns.size() >= 2) {
-            if (code == columns[0]) {
-                value = columns[1];
-            }
+        if (code.toStdString() == c1) {
+            value = QString::fromStdString(c2);
         }
     }
 
-    file.close();
+    f.close();
+
 
     return value;
 }

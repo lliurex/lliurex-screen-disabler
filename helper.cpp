@@ -42,13 +42,13 @@ int main(int argc,char* argv[])
 
         if (!std::filesystem::exists(destination)) {
             std::filesystem::create_directory(destination);
-            chown(destination.c_str(), pwd->uid, pwd->gid);
+            chown(destination.c_str(), pwd->pw_uid, pwd->pw_gid);
         }
 
         std::filesystem::copy(source,destination);
 
         std::filesystem::path filepath = destination / source.filename();
-        chown(filepath.c_str(), pwd->uid, pwd->gid);
+        chown(filepath.c_str(), pwd->pw_uid, pwd->pw_gid);
 
     }
     catch(std::exception& e) {

@@ -24,6 +24,7 @@ namespace lliurex
 
         void loadConfig();
         void exportConfig();
+        void runHelper(QString path);
 
         QVariant m_data;
         QVBoxLayout* m_layout;

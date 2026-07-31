@@ -9,6 +9,8 @@ extern "C" {
     #include <libdisplay-info/edid.h>
 }
 
+#include <libintl.h>
+
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QLabel>
@@ -20,11 +22,16 @@ extern "C" {
 #include <QDir>
 #include <QRegularExpression>
 #include <QStringList>
+#include <QMessageBox>
+#include <QApplication>
+#include <QProcess>
 
 #include <fstream>
 
 using namespace lliurex;
 using namespace std;
+
+#define T(msg) dgettext ("lliurex-screen-disabler",msg)
 
 const QStringList screenDB = {
     ".*L01N8A.*" /* small integrated on tower screen */
@@ -111,14 +118,20 @@ MainWindow::MainWindow(QWidget* parent): QMainWindow(parent)
     QPushButton* btn;
 
     toolbar->addStretch();
-    btn = new QPushButton("Apply");
+    btn = new QPushButton(T("Apply"));
     connect(btn, &QPushButton::clicked, [this]()
     {
         exportConfig();
+
+        QMessageBox msgBox(this);
+        msgBox.setText(T("Screen settings has been set successfully"));
+        msgBox.exec();
+
+        QApplication::quit();
     });
     toolbar->addWidget(btn);
 
-    btn = new QPushButton("Cancel");
+    btn = new QPushButton(T("Cancel"));
     connect(btn, &QPushButton::clicked, [this]()
     {
         close();
@@ -126,9 +139,9 @@ MainWindow::MainWindow(QWidget* parent): QMainWindow(parent)
     toolbar->addWidget(btn);
 
     setWindowTitle("Lliurex Screen Disabler");
-    resize(800, 600);
+    resize(400, 300);
 
-    m_layout->addWidget(new QLabel("Available monitors"));
+    m_layout->addWidget(new QLabel(T("Available monitors")));
     m_layout->addLayout(m_screenList);
     m_layout->addStretch();
     m_layout->addLayout(toolbar);
@@ -260,4 +273,17 @@ void MainWindow::exportConfig()
     configFile.write(out.toJson());
 
     configFile.close();
+
+    runHelper("/tmp/kwinoutputconfig.json");
+}
+
+void MainWindow::runHelper(QString path)
+{
+    QProcess helper;
+    QStringList args;
+
+    args<<"/usr/libexec/lliurex-screen-disabler-helper"<<path;
+
+    helper.start("/usr/bin/pkexec",args);
+    helper.waitForFinished(3000);
 }

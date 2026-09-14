@@ -1,0 +1,13 @@
+Source: lliurex-screen-disabler
+Section: utils
+Priority: optional
+Maintainer: Enrique Medina Gremaldos <quique@necos.es>
+Build-Depends: debhelper-compat (=13), meson, ninja-build, g++ (>=11), qt6-base-dev
+Standards-Version: 4.6.0
+Homepage: https://github.com/lliurex/lliurex-screen-disabler
+
+Package: lliurex-screen-disabler
+Architecture: amd64
+Depends:${misc:Depends}, ${shlibs:Depends}
+Description: Disable screens at sddm
+ Disable screents at sddm

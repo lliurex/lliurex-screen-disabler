@@ -2,7 +2,7 @@ Source: lliurex-screen-disabler
 Section: utils
 Priority: optional
 Maintainer: Enrique Medina Gremaldos <quique@necos.es>
-Build-Depends: debhelper-compat (=13), meson, ninja-build, g++ (>=11), qt6-base-dev
+Build-Depends: debhelper-compat (=13), meson, ninja-build, g++ (>=11), qt6-base-dev, libdisplay-info-dev
 Standards-Version: 4.6.0
 Homepage: https://github.com/lliurex/lliurex-screen-disabler
 

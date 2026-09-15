@@ -1,3 +1,9 @@
+lliurex-screen-disabler (26.0.0.1) noble; urgency=medium
+
+  * Missing build-dep
+
+ -- Enrique Medina Gremaldos <quique@necos.es>  Tue, 15 Sep 2026 10:59:48 +0200
+
 lliurex-screen-disabler (26.0.0.0) noble; urgency=medium
 
   * Initial release.

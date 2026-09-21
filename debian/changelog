@@ -1,3 +1,9 @@
+lliurex-screen-disabler (26.0.0.7) noble; urgency=medium
+
+  * Added hwdata as dependency. Needed for fetching Monitor names
+
+ -- Enrique Medina Gremaldos <quique@necos.es>  Mon, 21 Sep 2026 09:27:13 +0200
+
 lliurex-screen-disabler (26.0.0.6) noble; urgency=medium
 
   * Missing build-dep

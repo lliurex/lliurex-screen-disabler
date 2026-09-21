@@ -8,6 +8,6 @@ Homepage: https://github.com/lliurex/lliurex-screen-disabler
 
 Package: lliurex-screen-disabler
 Architecture: amd64
-Depends:${misc:Depends}, ${shlibs:Depends}
+Depends:${misc:Depends}, ${shlibs:Depends}, hwdata
 Description: Disable screens at sddm
  Disable screents at sddm

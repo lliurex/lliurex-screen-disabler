@@ -25,6 +25,7 @@ extern "C" {
 #include <QMessageBox>
 #include <QApplication>
 #include <QProcess>
+#include <QCryptographicHash>
 
 #include <fstream>
 
@@ -34,8 +35,28 @@ using namespace std;
 #define T(msg) dgettext ("lliurex-screen-disabler",msg)
 
 const QStringList screenDB = {
-    ".*L01N8A.*" /* small integrated on tower screen */
+    ".*L01N8A.*", /* small integrated on tower screen */
+    ".*Hitevision Group Newline", /* Newline panels */
+    ".* IFP Display" /*  */
 };
+
+QString md5Sum(QString path)
+{
+        QString sum;
+
+        QFile file(path);
+
+        if (file.open(QFile::ReadOnly)) {
+
+            QCryptographicHash hash(QCryptographicHash::Md5);
+
+            if (hash.addData(&file)) {
+                sum = hash.result().toHex();
+            }
+        }
+
+        return sum;
+}
 
 QString getVendorName(QString code)
 {
@@ -102,6 +123,7 @@ QString readEdid(QString path)
     qDebug()<<"["<<product->manufacturer<<"]";
     qDebug()<<"["<<manufacturer<<"]";
     value = manufacturer + " " + value;
+    qDebug()<<"["<<value<<"]";
     di_info_destroy(info);
 
     return value;
@@ -184,7 +206,22 @@ void MainWindow::loadConfig()
             for (QVariant & output : outputs) {
                 QHash<QString,QVariant> outputData = output.toHash();
                 QString connector = outputData["connectorName"].toString();
-                QString edid = readEdid("/sys/class/drm/card1-" + connector + "/edid");
+                QString edidPath = "/sys/class/drm/card1-" + connector + "/edid";
+
+                if (!QFile::exists(edidPath)) {
+                    continue;
+                }
+
+                QString edidHash = md5Sum(edidPath);
+
+                if (edidHash != outputData["edidHash"].toString()) {
+                    continue;
+                }
+                else {
+                    qDebug()<<"device is connected\n";
+                }
+
+                QString edid = readEdid(edidPath);
 
                 QCheckBox* checkBox = new QCheckBox(edid);
                 checkBox->setProperty("screenIndex",n);

@@ -34,7 +34,9 @@ using namespace std;
 #define T(msg) dgettext ("lliurex-screen-disabler",msg)
 
 const QStringList screenDB = {
-    ".*L01N8A.*" /* small integrated on tower screen */
+    ".*L01N8A.*", /* small integrated on tower screen */
+    ".*Hitevision Group Newline", /* Newline panels */
+    ".* IFP Display" /*  */
 };
 
 QString getVendorName(QString code)
@@ -102,6 +104,7 @@ QString readEdid(QString path)
     qDebug()<<"["<<product->manufacturer<<"]";
     qDebug()<<"["<<manufacturer<<"]";
     value = manufacturer + " " + value;
+    qDebug()<<"["<<value<<"]";
     di_info_destroy(info);
 
     return value;

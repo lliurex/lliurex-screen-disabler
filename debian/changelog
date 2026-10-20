@@ -1,3 +1,9 @@
+lliurex-screen-disabler (26.0.1.0) noble; urgency=medium
+
+  * Only showing devices connected and matching edid md5 hash
+
+ -- Enrique Medina Gremaldos <quique@necos.es>  Tue, 20 Oct 2026 11:48:21 +0200
+
 lliurex-screen-disabler (26.0.0.7) noble; urgency=medium
 
   * Added hwdata as dependency. Needed for fetching Monitor names

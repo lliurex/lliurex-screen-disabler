@@ -26,6 +26,7 @@ extern "C" {
 #include <QApplication>
 #include <QProcess>
 #include <QCryptographicHash>
+#include <QTemporaryDir>
 
 #include <fstream>
 #include <cstdlib>
@@ -318,17 +319,27 @@ void MainWindow::exportConfig()
         nitems<<section;
     }
 
-    QFile configFile;
-    configFile.setFileName("/tmp/kwinoutputconfig.json");
+    QTemporaryDir tempDir;
 
-    configFile.open(QIODevice::ReadWrite | QIODevice::Truncate);
+    if (!tempDir.isValid()) {
+        qWarning()<<"Failed to create temporary directory:"<<tempDir.errorString();
+        return;
+    }
+
+    QFile configFile(tempDir.filePath("kwinoutputconfig.json"));
+
+    if (!configFile.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        qWarning()<<"Failed to open temporary config file:"<<configFile.errorString();
+        return;
+    }
+
     QJsonDocument out = QJsonDocument::fromVariant(nitems);
 
     configFile.write(out.toJson());
 
     configFile.close();
 
-    runHelper("/tmp/kwinoutputconfig.json");
+    runHelper(configFile.fileName());
 }
 
 void MainWindow::runHelper(QString path)

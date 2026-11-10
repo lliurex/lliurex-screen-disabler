@@ -219,10 +219,9 @@ void MainWindow::loadConfig()
 
         if (section["name"].toString() == "outputs") {
             QList<QVariant> outputs = section["data"].toList();
-            int n = 0;
 
-            for (QVariant & output : outputs) {
-                QHash<QString,QVariant> outputData = output.toHash();
+            for (int outputIndex = 0; outputIndex < outputs.size(); ++outputIndex) {
+                QHash<QString,QVariant> outputData = outputs.at(outputIndex).toHash();
                 QString connector = outputData["connectorName"].toString();
                 QString edidPath = "/sys/class/drm/card1-" + connector + "/edid";
 
@@ -242,7 +241,7 @@ void MainWindow::loadConfig()
                 QString edid = readEdid(edidPath);
 
                 QCheckBox* checkBox = new QCheckBox(edid);
-                checkBox->setProperty("screenIndex",n);
+                checkBox->setProperty("screenIndex",outputIndex);
 
                 connect(checkBox, &QCheckBox::checkStateChanged, [this,checkBox]()
                 {
@@ -253,7 +252,7 @@ void MainWindow::loadConfig()
                 m_screenList->addWidget(checkBox);
 
                 checkBox->setCheckState(Qt::Checked);
-                m_enable[n] = true;
+                m_enable[outputIndex] = true;
 
                 for (QString screenRule : screenDB) {
                     QRegularExpression rule(screenRule);
@@ -262,11 +261,9 @@ void MainWindow::loadConfig()
                         qDebug()<<"Match "<<edid<<" with "<<screenRule;
 
                         checkBox->setCheckState(Qt::Unchecked);
-                        m_enable[n] = false;
+                        m_enable[outputIndex] = false;
                     }
                 }
-
-                n++;
             }
         }
     }
@@ -304,7 +301,9 @@ void MainWindow::exportConfig()
                     //outputData["enabled"] = true;
                     qDebug()<<"index:"<<index;
 
-                    outputData["enabled"] = m_enable[index];
+                    if (m_enable.contains(index)) {
+                        outputData["enabled"] = m_enable[index];
+                    }
 
                     noutputs<<outputData;
                 }

@@ -28,6 +28,7 @@ extern "C" {
 #include <QCryptographicHash>
 
 #include <fstream>
+#include <cstdlib>
 
 using namespace lliurex;
 using namespace std;
@@ -67,8 +68,7 @@ QString getVendorName(QString code)
 
     string line;
 
-    while (f.good()) {
-        std::getline(f,line);
+    while (std::getline(f,line)) {
 
         std::size_t tab = line.find('\t');
         if (tab == std::string::npos) {
@@ -76,7 +76,7 @@ QString getVendorName(QString code)
         }
 
         string c1 = line.substr(0,tab);
-        string c2 = line.substr(tab);
+        string c2 = line.substr(tab + 1);
 
         if (code.toStdString() == c1) {
             value = QString::fromStdString(c2);
@@ -99,9 +99,8 @@ QString readEdid(QString path)
 
     f.open(spath.c_str(),std::ios::binary | std::ios::in);
 
-    while (f.good()) {
-        char data;
-        f.read(&data,1);
+    char data;
+    while (f.read(&data,1)) {
         buffer.push_back(data);
     }
 
@@ -110,12 +109,31 @@ QString readEdid(QString path)
     struct di_info* info;
 
     info = di_info_parse_edid((void *)buffer.data(),buffer.size());
-    value = di_info_get_model(info);
+    if (!info) {
+        return QString();
+    }
+
+    char* infoModel = di_info_get_model(info);
+
+    if (infoModel) {
+        value =  infoModel;
+        std::free(infoModel);
+    }
     qDebug()<<"model:"<<value;
 
     const struct di_edid* edid = di_info_get_edid(info);
 
+    if (!edid) {
+        di_info_destroy(info);
+        return QString();
+    }
+
     const struct di_edid_vendor_product* product = di_edid_get_vendor_product(edid);
+
+    if (!product) {
+        di_info_destroy(info);
+        return QString();
+    }
 
     QString manufacturer = getVendorName(product->manufacturer);
 
@@ -304,7 +322,7 @@ void MainWindow::exportConfig()
     QFile configFile;
     configFile.setFileName("/tmp/kwinoutputconfig.json");
 
-    configFile.open(QIODevice::ReadWrite);
+    configFile.open(QIODevice::ReadWrite | QIODevice::Truncate);
     QJsonDocument out = QJsonDocument::fromVariant(nitems);
 
     configFile.write(out.toJson());

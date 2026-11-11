@@ -1,3 +1,9 @@
+lliurex-screen-disabler (26.0.2.0) noble; urgency=medium
+
+  * Set of fixes, included possible memory leaks and undefined behaviours
+
+ -- Enrique Medina Gremaldos <quique@necos.es>  Wed, 11 Nov 2026 08:44:19 +0100
+
 lliurex-screen-disabler (26.0.1.0) noble; urgency=medium
 
   * Only showing devices connected and matching edid md5 hash

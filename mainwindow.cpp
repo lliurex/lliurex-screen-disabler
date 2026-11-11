@@ -26,8 +26,10 @@ extern "C" {
 #include <QApplication>
 #include <QProcess>
 #include <QCryptographicHash>
+#include <QTemporaryDir>
 
 #include <fstream>
+#include <cstdlib>
 
 using namespace lliurex;
 using namespace std;
@@ -67,8 +69,7 @@ QString getVendorName(QString code)
 
     string line;
 
-    while (f.good()) {
-        std::getline(f,line);
+    while (std::getline(f,line)) {
 
         std::size_t tab = line.find('\t');
         if (tab == std::string::npos) {
@@ -76,7 +77,7 @@ QString getVendorName(QString code)
         }
 
         string c1 = line.substr(0,tab);
-        string c2 = line.substr(tab);
+        string c2 = line.substr(tab + 1);
 
         if (code.toStdString() == c1) {
             value = QString::fromStdString(c2);
@@ -99,9 +100,8 @@ QString readEdid(QString path)
 
     f.open(spath.c_str(),std::ios::binary | std::ios::in);
 
-    while (f.good()) {
-        char data;
-        f.read(&data,1);
+    char data;
+    while (f.read(&data,1)) {
         buffer.push_back(data);
     }
 
@@ -110,12 +110,31 @@ QString readEdid(QString path)
     struct di_info* info;
 
     info = di_info_parse_edid((void *)buffer.data(),buffer.size());
-    value = di_info_get_model(info);
+    if (!info) {
+        return QString();
+    }
+
+    char* infoModel = di_info_get_model(info);
+
+    if (infoModel) {
+        value =  infoModel;
+        std::free(infoModel);
+    }
     qDebug()<<"model:"<<value;
 
     const struct di_edid* edid = di_info_get_edid(info);
 
+    if (!edid) {
+        di_info_destroy(info);
+        return QString();
+    }
+
     const struct di_edid_vendor_product* product = di_edid_get_vendor_product(edid);
+
+    if (!product) {
+        di_info_destroy(info);
+        return QString();
+    }
 
     QString manufacturer = getVendorName(product->manufacturer);
 
@@ -201,10 +220,9 @@ void MainWindow::loadConfig()
 
         if (section["name"].toString() == "outputs") {
             QList<QVariant> outputs = section["data"].toList();
-            int n = 0;
 
-            for (QVariant & output : outputs) {
-                QHash<QString,QVariant> outputData = output.toHash();
+            for (int outputIndex = 0; outputIndex < outputs.size(); ++outputIndex) {
+                QHash<QString,QVariant> outputData = outputs.at(outputIndex).toHash();
                 QString connector = outputData["connectorName"].toString();
                 QString edidPath = "/sys/class/drm/card1-" + connector + "/edid";
 
@@ -224,7 +242,7 @@ void MainWindow::loadConfig()
                 QString edid = readEdid(edidPath);
 
                 QCheckBox* checkBox = new QCheckBox(edid);
-                checkBox->setProperty("screenIndex",n);
+                checkBox->setProperty("screenIndex",outputIndex);
 
                 connect(checkBox, &QCheckBox::checkStateChanged, [this,checkBox]()
                 {
@@ -235,7 +253,7 @@ void MainWindow::loadConfig()
                 m_screenList->addWidget(checkBox);
 
                 checkBox->setCheckState(Qt::Checked);
-                m_enable[n] = true;
+                m_enable[outputIndex] = true;
 
                 for (QString screenRule : screenDB) {
                     QRegularExpression rule(screenRule);
@@ -244,11 +262,9 @@ void MainWindow::loadConfig()
                         qDebug()<<"Match "<<edid<<" with "<<screenRule;
 
                         checkBox->setCheckState(Qt::Unchecked);
-                        m_enable[n] = false;
+                        m_enable[outputIndex] = false;
                     }
                 }
-
-                n++;
             }
         }
     }
@@ -286,7 +302,9 @@ void MainWindow::exportConfig()
                     //outputData["enabled"] = true;
                     qDebug()<<"index:"<<index;
 
-                    outputData["enabled"] = m_enable[index];
+                    if (m_enable.contains(index)) {
+                        outputData["enabled"] = m_enable[index];
+                    }
 
                     noutputs<<outputData;
                 }
@@ -301,17 +319,27 @@ void MainWindow::exportConfig()
         nitems<<section;
     }
 
-    QFile configFile;
-    configFile.setFileName("/tmp/kwinoutputconfig.json");
+    QTemporaryDir tempDir;
 
-    configFile.open(QIODevice::ReadWrite);
+    if (!tempDir.isValid()) {
+        qWarning()<<"Failed to create temporary directory:"<<tempDir.errorString();
+        return;
+    }
+
+    QFile configFile(tempDir.filePath("kwinoutputconfig.json"));
+
+    if (!configFile.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        qWarning()<<"Failed to open temporary config file:"<<configFile.errorString();
+        return;
+    }
+
     QJsonDocument out = QJsonDocument::fromVariant(nitems);
 
     configFile.write(out.toJson());
 
     configFile.close();
 
-    runHelper("/tmp/kwinoutputconfig.json");
+    runHelper(configFile.fileName());
 }
 
 void MainWindow::runHelper(QString path)

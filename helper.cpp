@@ -45,7 +45,7 @@ int main(int argc,char* argv[])
             chown(destination.c_str(), pwd->pw_uid, pwd->pw_gid);
         }
 
-        std::filesystem::copy(source,destination);
+        std::filesystem::copy(source,destination, std::filesystem::copy_options::overwrite_existing);
 
         std::filesystem::path filepath = destination / source.filename();
         chown(filepath.c_str(), pwd->pw_uid, pwd->pw_gid);
